@@ -1406,6 +1406,24 @@ defmodule SymphonyElixir.StatusDashboard do
     humanize_codex_wrapper_event(suffix, payload)
   end
 
+  defp humanize_codex_method("session/update", payload) do
+    # OpenCode ACP session/update notification
+    update_type =
+      map_path(payload, ["params", "update", "type"]) ||
+        map_path(payload, [:params, :update, :type]) ||
+        "unknown"
+
+    case update_type do
+      "agentMessage/delta" -> "agent message streaming"
+      "toolCall/started" -> "tool call started"
+      "toolCall/completed" -> "tool call completed"
+      "fileOperation/started" -> "file operation started"
+      "fileOperation/completed" -> "file operation completed"
+      "session_completed" -> "session completed"
+      other -> "session update (#{other})"
+    end
+  end
+
   defp humanize_codex_method(method, payload) do
     msg_type =
       map_path(payload, ["params", "msg", "type"]) ||

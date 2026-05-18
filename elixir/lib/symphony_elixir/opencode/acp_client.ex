@@ -352,8 +352,15 @@ defmodule SymphonyElixir.OpenCode.ACPClient do
     # Try to extract token usage from ACP update
     acp_usage = extract_acp_usage_from_update(update)
 
+    # Construct payload with method field for status dashboard to recognize
+    # Format matches Codex: %{"method" => "...", "params" => ...}
+    payload = %{
+      "method" => "session/update",
+      "params" => params
+    }
+
     details = %{
-      payload: params,
+      payload: payload,
       raw: payload_string,
       update: update
     }
