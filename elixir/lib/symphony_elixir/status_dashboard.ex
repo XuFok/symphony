@@ -393,12 +393,21 @@ defmodule SymphonyElixir.StatusDashboard do
   end
 
   defp format_project_link_lines do
-    project_part =
-      case Config.settings!().tracker.project_slug do
-        project_slug when is_binary(project_slug) and project_slug != "" ->
-          colorize(linear_project_url(project_slug), @ansi_cyan)
+    tracker = Config.settings!().tracker
 
-        _ ->
+    project_part =
+      cond do
+        # Linear project
+        is_binary(tracker.project_slug) and tracker.project_slug != "" ->
+          colorize(linear_project_url(tracker.project_slug), @ansi_cyan)
+
+        # Gitea repository
+        tracker.kind == "gitea" and is_binary(tracker.endpoint) and
+          is_binary(tracker.owner) and is_binary(tracker.repo) ->
+          colorize("#{tracker.endpoint}/#{tracker.owner}/#{tracker.repo}", @ansi_cyan)
+
+        # Default
+        true ->
           colorize("n/a", @ansi_gray)
       end
 

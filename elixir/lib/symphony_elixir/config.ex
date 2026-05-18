@@ -114,12 +114,36 @@ defmodule SymphonyElixir.Config do
     end
   end
 
+  @type opencode_runtime_settings :: %{
+          command: String.t(),
+          agent: String.t(),
+          model: String.t() | nil,
+          turn_timeout_ms: non_neg_integer(),
+          read_timeout_ms: non_neg_integer(),
+          stall_timeout_ms: non_neg_integer()
+        }
+
+  @spec opencode_runtime_settings() :: {:ok, opencode_runtime_settings()} | {:error, term()}
+  def opencode_runtime_settings do
+    with {:ok, settings} <- settings() do
+      {:ok,
+       %{
+         command: settings.opencode.command,
+         agent: settings.opencode.agent,
+         model: settings.opencode.model,
+         turn_timeout_ms: settings.opencode.turn_timeout_ms,
+         read_timeout_ms: settings.opencode.read_timeout_ms,
+         stall_timeout_ms: settings.opencode.stall_timeout_ms
+       }}
+    end
+  end
+
   defp validate_semantics(settings) do
     cond do
       is_nil(settings.tracker.kind) ->
         {:error, :missing_tracker_kind}
 
-      settings.tracker.kind not in ["linear", "memory"] ->
+      settings.tracker.kind not in ["linear", "memory", "gitea"] ->
         {:error, {:unsupported_tracker_kind, settings.tracker.kind}}
 
       settings.tracker.kind == "linear" and not is_binary(settings.tracker.api_key) ->
@@ -127,6 +151,13 @@ defmodule SymphonyElixir.Config do
 
       settings.tracker.kind == "linear" and not is_binary(settings.tracker.project_slug) ->
         {:error, :missing_linear_project_slug}
+
+      settings.tracker.kind == "gitea" and not is_binary(settings.tracker.api_key) ->
+        {:error, :missing_gitea_api_token}
+
+      settings.tracker.kind == "gitea" and
+          (not is_binary(settings.tracker.owner) or not is_binary(settings.tracker.repo)) ->
+        {:error, :missing_gitea_repo_config}
 
       true ->
         :ok
@@ -143,6 +174,12 @@ defmodule SymphonyElixir.Config do
 
       {:workflow_parse_error, raw_reason} ->
         "Failed to parse WORKFLOW.md: #{inspect(raw_reason)}"
+
+      :missing_gitea_api_token ->
+        "Missing GITEA_API_KEY for gitea tracker"
+
+      :missing_gitea_repo_config ->
+        "Missing gitea owner/repo configuration"
 
       :workflow_front_matter_not_a_map ->
         "Failed to parse WORKFLOW.md: workflow front matter must decode to a map"
